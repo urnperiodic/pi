@@ -1,0 +1,276 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="description" content="An open-source, client-side web proxy powered by Scramjet and bare-mux." />
+  <title>FreeSearch &middot; Web Proxy</title>
+
+  <!-- Google Font -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+
+  <style>
+    :root {
+      --bg: #0d1117;
+      --bg-elevated: #161b22;
+      --border: #30363d;
+      --border-focus: #58a6ff;
+      --text: #e6edf3;
+      --text-muted: #8b949e;
+      --accent: #58a6ff;
+      --accent-grad-1: #6e8efb;
+      --accent-grad-2: #a777e3;
+      --danger: #f85149;
+      --success: #3fb950;
+      --radius: 28px;
+      --shadow: 0 16px 40px rgba(0, 0, 0, 0.45);
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    html, body { height: 100%; }
+
+    body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      background:
+        radial-gradient(900px 500px at 50% -10%, rgba(110, 142, 251, 0.16), transparent 60%),
+        radial-gradient(700px 500px at 90% 110%, rgba(167, 119, 227, 0.12), transparent 60%),
+        var(--bg);
+      color: var(--text);
+      min-height: 100%;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 24px;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    .app {
+      width: 100%;
+      max-width: 640px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      text-align: center;
+      animation: rise 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    @keyframes rise {
+      from { opacity: 0; transform: translateY(18px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .logo {
+      font-size: clamp(2.4rem, 7vw, 3.6rem);
+      font-weight: 700;
+      letter-spacing: -0.04em;
+      margin-bottom: 8px;
+      background: linear-gradient(120deg, var(--accent-grad-1), var(--accent-grad-2));
+      -webkit-background-clip: text;
+      background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    .tagline {
+      color: var(--text-muted);
+      font-size: 0.95rem;
+      font-weight: 400;
+      margin-bottom: 36px;
+    }
+
+    .search-form {
+      width: 100%;
+      position: relative;
+    }
+
+    .search-wrap {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      width: 100%;
+      background: var(--bg-elevated);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 6px 8px 6px 20px;
+      box-shadow: var(--shadow);
+      transition: border-color 0.2s ease, box-shadow 0.2s ease;
+    }
+
+    .search-wrap:focus-within {
+      border-color: var(--border-focus);
+      box-shadow: 0 0 0 4px rgba(88, 166, 255, 0.15), var(--shadow);
+    }
+
+    .search-icon {
+      flex-shrink: 0;
+      width: 20px;
+      height: 20px;
+      color: var(--text-muted);
+    }
+
+    .search-input {
+      flex: 1;
+      background: transparent;
+      border: none;
+      outline: none;
+      color: var(--text);
+      font-size: 1.05rem;
+      font-family: inherit;
+      padding: 14px 4px;
+    }
+
+    .search-input::placeholder { color: var(--text-muted); }
+
+    .search-btn {
+      flex-shrink: 0;
+      border: none;
+      cursor: pointer;
+      font-family: inherit;
+      font-size: 0.95rem;
+      font-weight: 600;
+      color: #fff;
+      background: linear-gradient(120deg, var(--accent-grad-1), var(--accent-grad-2));
+      border-radius: 22px;
+      padding: 12px 26px;
+      transition: transform 0.15s ease, opacity 0.2s ease;
+    }
+
+    .search-btn:hover { transform: translateY(-1px); }
+    .search-btn:active { transform: translateY(0); }
+    .search-btn:disabled { opacity: 0.55; cursor: not-allowed; transform: none; }
+
+    .hint {
+      margin-top: 16px;
+      font-size: 0.82rem;
+      color: var(--text-muted);
+    }
+
+    .status {
+      margin-top: 28px;
+      min-height: 22px;
+      font-size: 0.85rem;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      color: var(--text-muted);
+      transition: color 0.2s ease;
+    }
+
+    .status .dot {
+      width: 9px;
+      height: 9px;
+      border-radius: 50%;
+      background: var(--text-muted);
+      flex-shrink: 0;
+      transition: background 0.2s ease;
+    }
+
+    .status.loading .dot { background: var(--accent); animation: pulse 1.1s infinite ease-in-out; }
+    .status.ready .dot { background: var(--success); }
+    .status.error .dot { background: var(--danger); }
+    .status.ready { color: var(--success); }
+    .status.error { color: var(--danger); }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50% { opacity: 0.4; transform: scale(0.7); }
+    }
+
+    .quick-links {
+      margin-top: 32px;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      justify-content: center;
+    }
+
+    .chip {
+      background: var(--bg-elevated);
+      border: 1px solid var(--border);
+      color: var(--text-muted);
+      padding: 8px 16px;
+      border-radius: 18px;
+      font-size: 0.82rem;
+      cursor: pointer;
+      transition: all 0.18s ease;
+    }
+
+    .chip:hover {
+      color: var(--text);
+      border-color: var(--border-focus);
+      background: rgba(88, 166, 255, 0.08);
+    }
+
+    footer {
+      margin-top: 48px;
+      font-size: 0.75rem;
+      color: var(--text-muted);
+    }
+
+    footer a { color: var(--accent); text-decoration: none; }
+    footer a:hover { text-decoration: underline; }
+
+    @media (max-width: 480px) {
+      .search-btn { padding: 12px 18px; font-size: 0.85rem; }
+      .search-input { font-size: 1rem; }
+    }
+  </style>
+</head>
+<body>
+  <main class="app">
+    <h1 class="logo">FreeSearch</h1>
+    <p class="tagline">Open-source web proxy &middot; powered by Scramjet</p>
+
+    <form id="search-form" class="search-form" autocomplete="off">
+      <div class="search-wrap">
+        <svg class="search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <circle cx="11" cy="11" r="8"></circle>
+          <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+        </svg>
+        <input
+          id="search-input"
+          class="search-input"
+          type="text"
+          name="q"
+          placeholder="Search the web freely..."
+          aria-label="Search the web freely"
+          autofocus
+        />
+        <button id="search-btn" class="search-btn" type="submit" disabled>Searching…</button>
+      </div>
+    </form>
+
+    <p class="hint">Enter a URL (example.com) or a search term. Press Enter to browse.</p>
+
+    <nav class="quick-links" aria-label="Quick links">
+      <button class="chip" data-url="https://www.google.com">Google</button>
+      <button class="chip" data-url="https://www.wikipedia.org">Wikipedia</button>
+      <button class="chip" data-url="https://www.youtube.com">YouTube</button>
+      <button class="chip" data-url="https://github.com">GitHub</button>
+      <button class="chip" data-url="https://www.reddit.com">Reddit</button>
+    </nav>
+
+    <p id="status" class="status loading" role="status" aria-live="polite">
+      <span class="dot"></span><span id="status-text">Initializing proxy engine…</span>
+    </p>
+
+    <footer>
+      Static client-side proxy &middot;
+      <a href="https://github.com/MercuryWorkshop/scramjet" target="_blank" rel="noopener">Scramjet</a> +
+      <a href="https://github.com/MercuryWorkshop/bare-mux" target="_blank" rel="noopener">bare-mux</a>
+    </footer>
+  </main>
+
+  <!-- bare-mux: multiplexed transport layer (loaded as classic script, exposes window.BareMux) -->
+  <script src="https://cdn.jsdelivr.net/npm/@mercuryworkshop/bare-mux@2/dist/index.js"></script>
+
+  <!-- Scramjet controller bundle (exposes window.$scramjet / ScramjetController) -->
+  <script src="https://cdn.jsdelivr.net/npm/@mercuryworkshop/scramjet@latest/dist/scramjet.all.js"></script>
+
+  <!-- Application logic -->
+  <script src="script.js"></script>
+</body>
+</html>
